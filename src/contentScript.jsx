@@ -1,14 +1,32 @@
 const { default: alphabet } = require("./constants/alphabet");
-const {
-  CONTENT_SCRIPT,
-  SIDEBAR,
-} = require("./constants/messages");
 
 const novelHeaderId = "gtm-novel-work-scroll-begin-reading";
 const translationButtonClassName = "translation_button";
 const papagoTranslatedWindowId = "txtTarget";
 
-let document_observer = null;
+let documentObserver = null;
+let isTranslated = false;
+
+const changeAlpabetToAfterWord = (node) => {
+  const translatedText = node.innerHTML;
+
+  setTimeout(() => {
+    whale.storage.local.get("vocabularyList", ({ vocabularyList }) => {
+      const wordChangedText = vocabularyList.reduce(
+        (previousText, currentWord, index) => {
+          const tempWord = alphabet[index] + alphabet[index];
+          const replacedText = previousText.replaceAll(tempWord, currentWord.after);
+
+          return replacedText;
+        },
+        translatedText
+      );
+
+      node.innerHTML = wordChangedText;
+      isTranslated = true;
+    });
+  }, 2000);
+};
 
 const createButton = (text) => {
   const $button = document.createElement("button");
@@ -23,35 +41,33 @@ const createButton = (text) => {
 
     const spacedText = copied.replaceAll("<br>","%0A");
 
-    const requestTranslate = () => {
-      const data = {
-        from: CONTENT_SCRIPT,
-        to: SIDEBAR,
-        src: "vocabulary_list_request"
-      };
-
-      whale.runtime.sendMessage(data, (response) => {
-        whale.storage.local.set({
-          vocabularyList: response,
-        });
-
-        const numberedText = response.reduce(
-          (previousValue, currentValue, index) => {
-            const { before } = currentValue;
+    const openPapago = () => {
+      const changeBeforeWordToAlphabet = (list) => {
+        return list.reduce(
+          (previousText, currentWord, index) => {
             const tempWord = alphabet[index] + alphabet[index];
-
-            const replacedText = previousValue.replaceAll(before, tempWord);
+            const replacedText = previousText.replaceAll(currentWord.before, tempWord);
 
             return replacedText;
           },
           spacedText
         );
+      };
 
-        window.open(`https://papago.naver.com/?sk=auto&tk=ko&st=${numberedText}`, "_blank", "whale-sidebar");
+      whale.storage.local.get("vocabularyList", ({ vocabularyList }) => {
+        let text = null;
+
+        if (vocabularyList) {
+          text = changeBeforeWordToAlphabet(vocabularyList);
+        } else {
+          text = spacedText;
+        }
+
+        window.open(`https://papago.naver.com/?sk=auto&tk=ko&st=${text}`, "_blank", "whale-sidebar");
       });
     };
 
-    requestTranslate();
+    openPapago();
   };
 
   return $button;
@@ -81,43 +97,23 @@ const insertButton = ($el) => {
   $el.append($button);
 };
 
-let isTranslated = false;
 const attachMutationObserver = () => {
-  if (document_observer) return;
+  if (documentObserver) return;
 
-  document_observer = new MutationObserver(() => {
+  documentObserver = new MutationObserver(() => {
     const $novelHeader = document.querySelector(`#${novelHeaderId}`);
     const $translatedTextNode = document.querySelector(`#${papagoTranslatedWindowId}`);
-
-    if ($translatedTextNode && !isTranslated) {
-      const translatedText = $translatedTextNode.innerHTML;
-
-      setTimeout(() => {
-        whale.storage.local.get("vocabularyList", (storage) => {
-          const unNumberedText = storage.vocabularyList.reduce(
-            (previousValue, currentValue, index) => {
-              const { after } = currentValue;
-              const tempWord = alphabet[index] + alphabet[index];
-
-              const replacedText = previousValue.replaceAll(tempWord, after);
-
-              return replacedText;
-            },
-            translatedText
-          );
-
-          $translatedTextNode.innerHTML = unNumberedText;
-          isTranslated = true;
-        });
-      }, 2000);
-    }
 
     if ($novelHeader) {
       insertButton($novelHeader);
     }
+
+    if ($translatedTextNode && !isTranslated) {
+      changeAlpabetToAfterWord($translatedTextNode);
+    }
   });
 
-  document_observer.observe(document.body, {
+  documentObserver.observe(document.body, {
     attributes: false,
     childList: true,
     subtree: true,

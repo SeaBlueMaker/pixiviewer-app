@@ -18,8 +18,7 @@ export default function VocabularyList ({ panel, data, handleDataUpdate }) {
     const newList = copied.filter((voca) => voca.before !== word);
 
     handleDataUpdate(newList);
-
-    window.localStorage.setItem("pixiviewerVoca", JSON.stringify(newList));
+    whale.storage.local.set({ vocabularyList: newList });
   };
 
   return (
