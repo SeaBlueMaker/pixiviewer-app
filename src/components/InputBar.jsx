@@ -17,6 +17,11 @@ export default function InputBar ({ vocaList, handleVocaListUpdate }) {
 
     handleVocaListUpdate(newList);
     window.localStorage.setItem("pixiviewerVoca", JSON.stringify(newList));
+
+    whale.storage.local.set({
+      vocabularyList: newList,
+    });
+
     setInputs({ before: "", after: ""});
   };
 

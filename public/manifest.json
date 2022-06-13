@@ -26,7 +26,8 @@
     {
       "matches": [
         "http://www.pixiv.net/*",
-        "https://www.pixiv.net/*"
+        "https://www.pixiv.net/*",
+        "https://papago.naver.com/*"
       ],
       "js": [ "contentScript.js" ],
       "css": [ "index.css" ],
@@ -35,7 +36,8 @@
   ],
   "permissions": [
     "<all_urls>",
-    "storage"
+    "storage",
+    "management"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }

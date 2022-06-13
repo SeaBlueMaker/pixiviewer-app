@@ -3,7 +3,12 @@ import React, { useEffect, useState } from "react";
 import TabMessage from "./TabMessage";
 import VocabularyList from "./VocabularyList";
 import InputBar from "./InputBar";
-import { NO_VOCABULARY_DATA } from "../constants/messages"
+
+import {
+  CONTENT_SCRIPT,
+  NO_VOCABULARY_DATA,
+  SIDEBAR,
+} from "../constants/messages"
 
 export default function VocabularyTab ({ panel }) {
   const [ vocaList, setVocaList ] = useState([]);
@@ -15,6 +20,14 @@ export default function VocabularyTab ({ panel }) {
       setVocaList(vocabularyListData);
     }
   }, []);
+
+  whale.runtime.onMessage.addListener(async (msg, sender, response) => {
+    if (msg.from === CONTENT_SCRIPT && msg.to === SIDEBAR) {
+      const vocabularyListData = JSON.parse(window.localStorage.getItem("pixiviewerVoca"));
+
+      response(vocabularyListData);
+    }
+  });
 
   const hasData = vocabularyListData && vocabularyListData.length !== 0;
 
